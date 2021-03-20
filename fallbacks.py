@@ -1,6 +1,5 @@
 import contextlib
 
-
 class QuietFallback:
     def __getattr__(self, item):
         return self

@@ -153,7 +153,6 @@ def main(argv = None):
             else:
                 # Non-gui mode, check for round end in 1ms
                 sleep(0.001)
-
     world.end()
 
 
