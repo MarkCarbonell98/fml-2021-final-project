@@ -27,9 +27,9 @@ def read_dict_from_file(self):
     Args:
         self:
     """
-    with open('q_table.json', 'r') as input:
-        self.q_table = json.load(input)
-        input.close()
+    with open('q_table.json', 'r') as q_table:
+        self.q_table = json.load(q_table)
+        q_table.close()
 
 
 def training_radius(self):
@@ -39,8 +39,8 @@ def training_radius(self):
         self:
     """
     coins = np.array(self.game_state['coins'])
-    agent = np.array([self.game_state['self'][0], self.game_state['self'][1]])
-    self.radius = max(min(np.linalg.norm(agent - coins, axis=1)), 4 * np.sqrt(2))
+    agent = np.array([self.game_state['self'][3][0], self.game_state['self'][3][1]])
+    self.radius = np.max(np.min(np.linalg.norm(agent - coins, axis=1)), 4 * np.sqrt(2))
 
 
 def real_radius(self):
@@ -51,9 +51,9 @@ def real_radius(self):
     """
     crates = np.array(np.where(self.game_state['field'] == 1))
     crates = crates.reshape(len(crates[0]), 2)
-    agent = np.array([self.game_state['self'][0], self.game_state['self'][1]])
-    self.radius = max(min(np.linalg.norm(agent - crates, axis=1)), 4 * np.sqrt(2))
-
+    agent = np.array([self.game_state['self'][3][0], self.game_state['self'][3][1]])
+    norm = np.linalg.norm(agent - crates, axis = 1)
+    self.radius = np.max([np.min(norm), 4 * np.sqrt(2)])
 
 def state_to_str(state):
     """
@@ -256,7 +256,7 @@ def find_state(self):
 
     """
     options = [(-1, 0, 'left'), (0, -1, 'up'), (1, 0, 'right'), (0, 1, 'down'), (0, 0, 'self')]
-    curr_state = list()
+    curr_state = []
     agent_coordinates = np.array([self.game_state['self'][3][0], self.game_state['self'][3][1]])
     self.curr_pos = agent_coordinates
 
@@ -271,7 +271,7 @@ def find_state(self):
         elif self.game_state['field'][observed_coordinates[0], observed_coordinates[1]] == 1:
             curr_state.append('crate')
             continue
-        elif self.game_state['explosions'][observed_coordinates[0], observed_coordinates[1]] > 1:
+        elif self.game_state['explosion_map'][observed_coordinates[0], observed_coordinates[1]] > 1:
             curr_state.append('wall')
             continue
 

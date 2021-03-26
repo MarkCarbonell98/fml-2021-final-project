@@ -30,8 +30,6 @@ def setup(self):
                     'wall': -70, 'empty': -10, 'danger2': -30, 'danger3': -20, 'invalid': -70, 'goal_action': 80,
                     'dead': -70, 'danger': -40, 'crate': -70}
 
-    self.train = False  # Todo - check what is that for.
-
     # HYPERPARAMETERS
     self.gamma = 0.65
     self.alpha = 0.25
@@ -51,28 +49,34 @@ def setup(self):
     except Exception as ex:
         self.q_table = dict()
 
-
 def act(self, game_state):
     """
 
     Args:
         self:
 
-    Returns:
+    Returns: str is an action
+        
 
     """
+    self.game_state = game_state
     self.logger.info('Pick action according to pressed key')
+    self.game_state['crate_density'] = s.CRATE_DENSITY
 
     # Epsilon-greedy policy
+    # game_events['crate_density'] # error 
     if self.game_state['step'] == 1 and self.radius is None:
-        training_radius(self) if s.crate_density == 0 else real_radius(self)
+        if s.CRATE_DENSITY == 0:
+            training_radius(self)
+        else:
+            real_radius(self)
 
     # First step: find the current state.
     self.curr_state = find_state(self)
     # Second step:
     string = state_to_str(self.curr_state)
 
-    if self.train_flag:
+    if self.train:
         action_rewards = np.array(self.q_table[string])
         if 0 in action_rewards:
 
@@ -101,6 +105,8 @@ def act(self, game_state):
     # Set action and change radius.
     self.radius += self.radius_incrementer
     self.next_action = self.actions[action]
+    self.logger.info(self.actions[action])
+    return self.actions[action]
 
 
 

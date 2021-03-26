@@ -27,10 +27,29 @@ def setup(self):
 
     :param self: This object is passed to all callbacks and you can set arbitrary values.
     """
+
+    ##np_load_old = np.load
+    ## modify the default parameters of np.load
+    ##np.load = lambda *a, **k: np_load_old(*a, allow_pickle=True, **k)
+    ## call load_data with allow_pickle implicitly set to true
+    #np_load_old = np.load
+    #np.load = lambda *a, **k: np_load_old(*a, allow_pickle=True)
+
+    ## call load_data with allow_pickle implicitly set to true
+    #matrix = sparse.load_npz("q_values.npz")
+    #q_values = matrix.todok()
+    ## restore np.load for future normal usage
+    ## np.load.__defaults__=(None, False, True, 'ASCII')
+    #np.load = np_load_old
+    #print("File was loaded")
+    ## restore np.load for future normal usage
+    ##np.load = np_load_old
+
+    # self.q_values = q_values
     self.rounds = 0
     self.random_prob = 0.4
-    self.ruled_based_agent = True
-    self.move = False
+    self.ruled_based_agent = False
+    self.move = True
     self.logger.debug('Successfully entered setup code')
     np.random.seed()
     # Fixed length FIFO queues to avoid repeating the same actions
@@ -119,9 +138,9 @@ def use_symmetry(features, action, next_features, reward, self):
         next_max = np.max(self.q_values[features_to_state_number(next_features)].toarray())
         new_value = (1 - self.alpha) * old_value + self.alpha * (reward + self.gamma * next_max)
         self.q_values[features_to_state_number(features), action] = new_value
-        if old_value==0:
-            print("Old Value: " + str(old_value))
-            print("New Value: " + str(new_value))
+        # if old_value==0:
+            # print("Old Value: " + str(old_value))
+            # print("New Value: " + str(new_value))
 
     # Symmetry 1, interchange of up and down
     state_number_changed = features_to_state_number(symmetry_up_down(features))

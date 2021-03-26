@@ -70,7 +70,7 @@ def setup_training(self):
         # restore np.load for future normal usage
         # np.load.__defaults__=(None, False, True, 'ASCII')
         np.load = np_load_old
-        print("File was loaded")
+        #print("File was loaded")
         # restore np.load for future normal usage
         #np.load = np_load_old
     self.q_values = q_values
@@ -137,9 +137,9 @@ def use_symmetry(features, action, next_features, reward, self):
         new_value = (1 - self.alpha) * old_value + self.alpha * (reward + self.gamma * next_max)
 
         self.q_values[features_to_state_number(features), action] = new_value
-        if old_value==0:
-            print("Old Value: " + str(old_value))
-            print("New Value: " + str(new_value))
+        # if old_value==0:
+        #     print("Old Value: " + str(old_value))
+        #     print("New Value: " + str(new_value))
 
     # Symmetry 1, interchange of up and down
     state_number_changed = features_to_state_number(symmetry_up_down(features))
@@ -328,7 +328,7 @@ def game_events_occurred(self, old_game_state: dict, self_action: str, new_game_
         if repition:
             if len(self.repition) >=2:
                 if np.all(self.repition[0] == self.repition[1]):
-                    print("Repetion was made #1")
+                    #print("Repetion was made #1")
                     while self.repition:
                         features, action, next_features, reward = self.transitions.pop()
                         reward = reward - 0.5
@@ -338,7 +338,7 @@ def game_events_occurred(self, old_game_state: dict, self_action: str, new_game_
                         self.steps = self.steps - 1
             if len(self.repition) == 5:
                 if np.all(self.repition[0] == self.repition[5]):
-                    print("Repetion was made #2")
+                    #print("Repetion was made #2")
                     while self.repition:
                         features, action, next_features, reward = self.transitions.pop()
                         reward = reward - 0.5
@@ -349,7 +349,7 @@ def game_events_occurred(self, old_game_state: dict, self_action: str, new_game_
 
                 self.repition.clear()
                 # repition = False
-                print("Repition was cleared")
+                #print("Repition was cleared")
 
         # state_to_features is defined in callbacks.py
         if np.any(np.isin(numpy_events, 'COIN_COLLECTED')):
@@ -391,11 +391,11 @@ def game_events_occurred(self, old_game_state: dict, self_action: str, new_game_
                         state = features_to_state_number(features)
             self.transitions.clear()
             self.repition.clear()
-            print("0 Coins were collected and Q-Table got updated")
+            #print("0 Coins were collected and Q-Table got updated")
             self.coins_collected = 0
             self.steps = 0
-    if self_action == None:
-        print("Self_action = None")
+    #if self_action == None:
+        #print("Self_action = None")
 
 
 def end_of_round(self, last_game_state: dict, last_action: str, events: List[str]):
@@ -434,8 +434,8 @@ def end_of_round(self, last_game_state: dict, last_action: str, events: List[str
             action = action_number(action)
             use_symmetry(features, action, next_features, reward, self)
     self.transitions.clear()
-    print("deque was cleared")
-    print("Game Ended")
+    #print("deque was cleared")
+    #print("Game Ended")
     self.repition.clear()
     if self.rounds%250 ==0:
         matrix = self.q_values.tocoo()

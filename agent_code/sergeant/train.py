@@ -5,12 +5,28 @@ import settings as s
 import sys
 import os
 
+sys.path.append('agent_code/sergeant/')
+
+from utils import *
+from typing import List
+from collections import namedtuple, deque
+
 INVALID_ACTION = 6
 DROP_BOMB = 4
 KILLED_SELF = 13
 GOT_KILLED = 14
 
-def update_reward(self):
+Transition = namedtuple('Transition',
+                        ('state', 'action', 'next_state', 'reward'))
+
+# Hyper parameters -- DO modify
+TRANSITION_HISTORY_SIZE = 3  # keep only ... last transitions
+RECORD_ENEMY_TRANSITIONS = 1.0  # record enemy transitions with probability ...
+
+# Events
+PLACEHOLDER_EVENT = "PLACEHOLDER"
+
+def reward_from_events(self, game_state):
     """
     Allow intermediate rewards based on game events.
 
@@ -22,7 +38,7 @@ def update_reward(self):
     """
     self.logger.debug(f'Encountered {len(self.events)} game event(s)')
     # Restart round log
-    if self.game_state['step'] == 1:
+    if game_state['step'] == 1:
         self.round_rewards_log = dict()
         self.train_flag = True
         training_radius(self) if s.crate_density == 0 else real_radius(self)
@@ -31,13 +47,13 @@ def update_reward(self):
     if len(self.events) == 0:
         return
 
-    self.curr_pos = np.array([self.game_state["self"][0], self.game_state["self"][1]])
+    self.curr_pos = np.array([game_state["self"][0], game_state["self"][1]])
     state_string = state_to_str(self.curr_state)
     # First step: We created a list of relevant actions from given events
     action, reward_update = 0, 0
     for event in self.events:
         # Move has been made:
-        if event not in self.relevant_actions:
+        if event not in self.relevant_events:
             continue
 
         # Translation of game settings
@@ -69,9 +85,13 @@ def update_reward(self):
             prev_state_string = state_to_str(self.prev_state)
             alpha, gamma = self.alpha, self.gamma
             Q0sa0 = self.q_table[prev_state_string][self.prev_action]
-            Qs1a1 = self.rewards['dead'] if GOT_KILLED == self.events[-1] else max(self.q_table[state_string])
+            if GOT_KILLED == self.events[14]:
+                Qs1a1 = self.rewards['dead']
+            else:
+                Qs1a1 = np.max(self.q_table[state_string])
             curr_reward = Q0sa0 + alpha * (self.prev_reward + gamma * Qs1a1 - Q0sa0)
             self.q_table[prev_state_string][self.prev_action] = curr_reward
+            self.logger.info(f"Current reward: {curr_reward}")
 
         except Exception as ex:
             # No previous steps are listed
@@ -85,8 +105,7 @@ def update_reward(self):
 
 
 
-
-def end_of_round(self):
+def end_of_round(self, last_game_state: dict, last_action: str, events: List[str]):
     """
     Called at the end of each game or when the agent died to hand out final rewards.
     This is similar to reward_update. self.events will contain all events that
@@ -98,8 +117,8 @@ def end_of_round(self):
     self.logger.debug(f'Encountered {len(self.events)} game event(s) in final step')
 
     # Update reward
-    update_reward(self)
-    update_reward(self)
+    reward_from_events(self, last_game_state)
+    reward_from_events(self, last_game_state)
 
     # Reduce epsilon
     if self.epsilon >= self.epsilon_min:
@@ -113,5 +132,49 @@ def end_of_round(self):
     # Save q_table
     write_dict_to_file(self)
 
-    if self.number_of_games % 50 == 0:
-        print("#games = {}".format(self.number_of_games))
+    if self.game_state['round'] % 50 == 0:
+        print("#games = {}".format(self.game_state['round']))
+
+
+def setup_training(self):
+    """
+    Initialise self for training purpose.
+
+    This is called after `setup` in callbacks.py.
+
+    :param self: This object is passed to all callbacks and you can set arbitrary values.
+    """
+    # Example: Setup an array that will note transition tuples
+    # (s, a, r, s')
+    self.transitions = deque(maxlen=TRANSITION_HISTORY_SIZE)
+
+
+def game_events_occurred(self, old_game_state: dict, self_action: str, new_game_state: dict, events: List[str]):
+    """
+    Called once per step to allow intermediate rewards based on game events.
+
+    When this method is called, self.events will contain a list of all game
+    events relevant to your agent that occurred during the previous step. Consult
+    settings.py to see what events are tracked. You can hand out rewards to your
+    agent based on these events and your knowledge of the (new) game state.
+
+    This is *one* of the places where you could update your agent.
+
+    :param self: This object is passed to all callbacks and you can set arbitrary values.
+    :param old_game_state: The state that was passed to the last call of `act`.
+    :param self_action: The action that you took.
+    :param new_game_state: The state the agent is in now.
+    :param events: The events that occurred when going from  `old_game_state` to `new_game_state`
+    """
+    self.logger.debug(f'Encountered game event(s) {", ".join(map(repr, events))} in step {new_game_state["step"]}')
+
+    # Idea: Add your own events to hand out rewards
+    if ...:
+        events.append(PLACEHOLDER_EVENT)
+
+    # state_to_features is defined in callbacks.py
+    # self.transitions.append(Transition(state_to_features(old_game_state), self_action, state_to_features(new_game_state), reward_from_events(self, events)))
+
+
+
+
