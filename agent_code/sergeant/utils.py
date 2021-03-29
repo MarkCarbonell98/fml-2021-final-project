@@ -10,6 +10,7 @@ DROP_BOMB = 4
 KILLED_SELF = 13
 GOT_KILLED = 14
 
+
 def write_dict_to_file(self):
     """
     JSON to structure data as a dictionary
@@ -49,11 +50,11 @@ def real_radius(self):
     Args:
         self:
     """
-    crates = np.array(np.where(self.game_state['field'] == 1))
-    crates = crates.reshape(len(crates[0]), 2)
+    crates = np.transpose(np.array(np.where(self.game_state['field'] == 1)))
     agent = np.array([self.game_state['self'][3][0], self.game_state['self'][3][1]])
-    norm = np.linalg.norm(agent - crates, axis = 1)
+    norm = np.linalg.norm(agent - crates, axis=1)
     self.radius = np.max([np.min(norm), 4 * np.sqrt(2)])
+
 
 def state_to_str(state):
     """
@@ -126,10 +127,11 @@ def find_priority(self, current_state, cand_name):
     if not len(candidates):
         return
 
-    # Calculate scores
+    # Calculate priority scores for candidate directions
     scores, best_indices = np.zeros(len(candidates)), []
     for i, index in enumerate(candidates):
         col, row = self.changes_point_in_dir[index]
+        # Supposed position after movement
         temp_pos = np.array([self.curr_pos[0] + col, self.curr_pos[1] + row])
 
         if cand_name == 'danger':
@@ -146,6 +148,7 @@ def find_priority(self, current_state, cand_name):
                     distance = np.linalg.norm(temp_pos - bombs)
                     scores[i] += np.sum(-20 * (1 / distance))
 
+        # Assign weight according to object
         for object_name in self.weights.keys():
             if object_name == 'field':
                 objects = np.array(np.where(self.game_state['field'] == 1))
@@ -158,6 +161,7 @@ def find_priority(self, current_state, cand_name):
                 objects = enemies[:, [0, 1]].astype(int) if len(enemies) else []
 
             if len(objects):
+                # Calculate distance between supposed position after move and objects
                 distance = np.linalg.norm(temp_pos - objects, axis=1)
                 indices = np.where(distance <= self.radius)[0]
                 rel_distance = distance[indices]
@@ -241,6 +245,7 @@ def clear_path(self, idx, curr_pos, counter=4):
         print("Reward_update: ", e, exc_type, fname, exc_tb.tb_lineno)
         bul = 5
 
+
 def find_state(self):
     """
     1st.: In each iteration, the state of each tile in all possible directions is determined and analyzed
@@ -264,7 +269,7 @@ def find_state(self):
         # Tile to be analyzed
         observed_coordinates = np.array([agent_coordinates[0] + col, agent_coordinates[1] + row])
 
-        # Check if tile is full or not
+        # Determine if tile is full or not
         if self.game_state['field'][observed_coordinates[0], observed_coordinates[1]] == -1:
             curr_state.append('wall')
             continue
@@ -275,6 +280,7 @@ def find_state(self):
             curr_state.append('wall')
             continue
 
+        # Determine players on the field and get distance from agent
         players = np.array(self.game_state['others'])
         if len(players):
             players_dis = np.linalg.norm(players[:, [0, 1]].astype(int) - observed_coordinates, axis=1)
@@ -282,7 +288,8 @@ def find_state(self):
                 curr_state.append('enemy')
                 continue
 
-        bombs = np.array([[x, y] for x, y, t in self.game_state['bombs'] if
+        # Determine bombs on the field and get coordinates
+        bombs = np.array([[x, y] for (x, y), t in self.game_state['bombs'] if
                           (x == observed_coordinates[0] or y == observed_coordinates[1])])
 
         if len(bombs):
@@ -295,10 +302,12 @@ def find_state(self):
                 curr_state.append('danger')
                 continue
 
+        # Stay at the same place is an empty field
         if direction == 'self':
             curr_state.append('empty')
             continue
 
+        # Determine coins on the field
         coins = np.array(self.game_state['coins'])
         if len(coins):
             coins = np.linalg.norm(coins - observed_coordinates, axis=1)
@@ -323,7 +332,7 @@ def find_state(self):
                 curr_state[j] = 'wall'
 
     if not ('enemy' in curr_state[:4] and self.game_state['self'][2] == 1) and 'coin' not in curr_state[:4]:
-        # Dead end when dropping a bomb is not a priority
+        # Avoid getting stuck by own bomb.
         if 'crate' in curr_state[:4] and self.game_state["self"][2]:
             empty = np.array(curr_state)[:4]
             empty = np.where(empty == 'empty')[0]
@@ -331,7 +340,7 @@ def find_state(self):
                 if not clear_path(self, j, self.curr_pos):
                     curr_state[j] = 'wall'
 
-        # Direction to empty tile has priority
+        # Find priority of directions with empty tiles
         elif 'empty' in curr_state[:4]:
             find_priority(self, curr_state, 'empty')
 
@@ -340,7 +349,7 @@ def find_state(self):
         elif 'danger' in curr_state[:4]:
             find_priority(self, curr_state, "danger")
 
-    # Bomb action is possible
+    # Boolean indicating whether bomb action is possible
     curr_state.append(str(self.game_state["self"][2] == 0))
 
     # If state is not in q_table, add it with a list of 6 0's.
