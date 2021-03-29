@@ -13,6 +13,7 @@ DROP_BOMB = 4
 KILLED_SELF = 13
 GOT_KILLED = 14
 
+
 def setup(self):
     self.curr_state = None
     self.prev_state = None
@@ -41,13 +42,14 @@ def setup(self):
     # self.radius permits to look for priorities nearby. self.weights establish priorities for the agent
     self.radius = None
     self.radius_incrementer = 0.1  # Each turn, radius is incremented by 0.05
-    self.weights = {'field': 1, 'field': 30, 'others': 1}  # Weights for each object on the board.
+    self.weights = {'field': 1, 'coins': 30, 'others': 1}  # Weights for each object on the board.
 
     # Load Q_table:
     try:  # If q_table.json file doesn't exit
         read_dict_from_file(self)
     except Exception as ex:
         self.q_table = dict()
+
 
 def act(self, game_state):
     """
@@ -64,7 +66,6 @@ def act(self, game_state):
     self.game_state['crate_density'] = s.CRATE_DENSITY
 
     # Epsilon-greedy policy
-    # game_events['crate_density'] # error 
     if self.game_state['step'] == 1 and self.radius is None:
         if s.CRATE_DENSITY == 0:
             training_radius(self)
@@ -79,10 +80,8 @@ def act(self, game_state):
     if self.train:
         action_rewards = np.array(self.q_table[string])
         if 0 in action_rewards:
-
             indices = np.where(action_rewards == 0)[0]
             action = np.random.choice(indices)
-
 
         # Epsilon-Greedy Policy: Epsilon is updated after every finished round while training.
         # Exploration- Exploitation Policy: epsilon_min permits the agent to still try random actions for different states
@@ -107,7 +106,3 @@ def act(self, game_state):
     self.next_action = self.actions[action]
     self.logger.info(self.actions[action])
     return self.actions[action]
-
-
-
-

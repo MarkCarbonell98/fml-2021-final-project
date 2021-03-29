@@ -26,7 +26,8 @@ RECORD_ENEMY_TRANSITIONS = 1.0  # record enemy transitions with probability ...
 # Events
 PLACEHOLDER_EVENT = "PLACEHOLDER"
 
-def reward_from_events(self, game_state):
+
+def game_events_occur(self, game_state):
     """
     Allow intermediate rewards based on game events.
 
@@ -102,9 +103,6 @@ def reward_from_events(self, game_state):
         self.prev_state = self.curr_state
 
 
-
-
-
 def end_of_round(self, last_game_state: dict, last_action: str, events: List[str]):
     """
     Called at the end of each game or when the agent died to hand out final rewards.
@@ -117,8 +115,7 @@ def end_of_round(self, last_game_state: dict, last_action: str, events: List[str
     self.logger.debug(f'Encountered {len(self.events)} game event(s) in final step')
 
     # Update reward
-    reward_from_events(self, last_game_state)
-    reward_from_events(self, last_game_state)
+    game_events_occur(self, last_game_state)
 
     # Reduce epsilon
     if self.epsilon >= self.epsilon_min:
@@ -144,9 +141,8 @@ def setup_training(self):
 
     :param self: This object is passed to all callbacks and you can set arbitrary values.
     """
-    # Example: Setup an array that will note transition tuples
-    # (s, a, r, s')
-    self.transitions = deque(maxlen=TRANSITION_HISTORY_SIZE)
+
+    pass
 
 
 def game_events_occurred(self, old_game_state: dict, self_action: str, new_game_state: dict, events: List[str]):
@@ -168,13 +164,23 @@ def game_events_occurred(self, old_game_state: dict, self_action: str, new_game_
     """
     self.logger.debug(f'Encountered game event(s) {", ".join(map(repr, events))} in step {new_game_state["step"]}')
 
-    # Idea: Add your own events to hand out rewards
-    if ...:
-        events.append(PLACEHOLDER_EVENT)
+    self.game_state = game_state = new_game_state
+    self.game_state['crate_density'] = s.CRATE_DENSITY
 
-    # state_to_features is defined in callbacks.py
-    # self.transitions.append(Transition(state_to_features(old_game_state), self_action, state_to_features(new_game_state), reward_from_events(self, events)))
+    if game_state['step'] == 1:
+        self.round_rewards_log = dict()
+        self.train_flag = True
+        if s.CRATE_DENSITY == 0:
+            training_radius(self)
+        else:
+            real_radius(self)
 
+    # No action has been made.
+    if len(self.events) == 0:
+        return
 
-
+    # First step: find the current state.
+    self.curr_state = find_state(self)
+    # Second step:
+    string = state_to_str(self.curr_state)
 
