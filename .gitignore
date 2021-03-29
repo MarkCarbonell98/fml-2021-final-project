@@ -112,3 +112,4 @@ screenshots/*.webm
 replays/
 **/*.npz
 **/*.json
+**/*.zip
