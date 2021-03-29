@@ -113,3 +113,4 @@ replays/
 **/*.npz
 **/*.json
 **/*.zip
+**/*.pdf
